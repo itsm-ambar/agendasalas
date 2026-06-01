@@ -16,6 +16,9 @@ export const authConfig = {
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
       clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
       issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+      authorization: {
+        params: { scope: "openid profile email offline_access User.Read User.ReadBasic.All" },
+      },
     }),
   ],
   pages: { signIn: "/login" },
@@ -41,6 +44,7 @@ export const authConfig = {
         session.user.id = (token.id as string) ?? session.user.id;
         session.user.role = (token.role as string) ?? "USER";
       }
+      (session as { msAccessToken?: string }).msAccessToken = token.msAccessToken as string | undefined;
       return session;
     },
   },

@@ -91,6 +91,17 @@ model Room {
   bookings Booking[]
 }
 
+// Catálogo de contatos para o autocomplete (externos digitados ficam gravados aqui).
+model Contact {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  external  Boolean  @default(true) // true = fora do tenant
+  createdAt DateTime @default(now())
+
+  @@index([name])
+}
+
 // ---- Auth.js (NextAuth) ----
 model Account {
   id                String  @id @default(cuid())

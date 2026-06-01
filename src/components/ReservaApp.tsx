@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createBookingAction } from "@/app/dashboard/actions";
 import { CancelButton } from "@/components/CancelButton";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AttendeePicker } from "@/components/AttendeePicker";
 import { fmtRange, fmtDate, todayISO, spDateKey } from "@/lib/format";
 
 type Room = {
@@ -46,8 +47,7 @@ export function ReservaApp({ rooms, bookings, myBookings, defaultEmail, userName
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [description, setDescription] = useState("");
-  const [attendees, setAttendees] = useState<string[]>([]);
-  const [attInput, setAttInput] = useState("");
+  const [attendees, setAttendees] = useState<{ email: string; name?: string }[]>([]);
   const [msg, setMsg] = useState<{ type: "error" | "ok"; text: string } | null>(null);
 
   const room = rooms.find((r) => r.id === roomId);
@@ -63,18 +63,6 @@ export function ReservaApp({ rooms, bookings, myBookings, defaultEmail, userName
   const upcomingMine = myBookings.filter(
     (b) => new Date(b.end) >= new Date() && !["CANCELLED", "REJECTED"].includes(b.status),
   );
-
-  function addAttendee() {
-    const e = attInput.trim().toLowerCase();
-    if (!e) return;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) {
-      setMsg({ type: "error", text: `E-mail inválido: ${e}` });
-      return;
-    }
-    if (!attendees.includes(e)) setAttendees([...attendees, e]);
-    setAttInput("");
-    setMsg(null);
-  }
 
   function submit() {
     setMsg(null);
@@ -190,36 +178,10 @@ export function ReservaApp({ rooms, bookings, myBookings, defaultEmail, userName
 
             <div className="mt-4">
               <label className="label">Participantes (recebem o convite)</label>
-              <div className="flex gap-2">
-                <input
-                  className="field"
-                  value={attInput}
-                  onChange={(e) => setAttInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
-                      e.preventDefault();
-                      addAttendee();
-                    }
-                  }}
-                  placeholder="email@autodoc.com.br e Enter"
-                />
-                <button type="button" onClick={addAttendee} className="btn-ghost whitespace-nowrap">
-                  Adicionar
-                </button>
-              </div>
-              <p className="mt-1.5 text-xs text-ink-mute">Você ({defaultEmail}) entra como organizador.</p>
-              {attendees.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {attendees.map((a) => (
-                    <span key={a} className="badge border-paper-line bg-paper text-ink-soft">
-                      {a}
-                      <button type="button" onClick={() => setAttendees(attendees.filter((x) => x !== a))} className="ml-1 text-ink-mute hover:text-rose-600" aria-label={`Remover ${a}`}>
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <AttendeePicker value={attendees} onChange={setAttendees} />
+              <p className="mt-1.5 text-xs text-ink-mute">
+                Busque pessoas da Autodoc/Ambar ou digite um e-mail externo. Você ({defaultEmail}) entra como organizador.
+              </p>
             </div>
 
             <div className="mt-4">

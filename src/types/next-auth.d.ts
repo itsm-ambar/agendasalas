@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       role: string;
     } & DefaultSession["user"];
+    msAccessToken?: string;
   }
   interface User {
     role?: string;
@@ -16,5 +17,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: string;
+    msAccessToken?: string;
+    msTokenExpires?: number;
   }
 }

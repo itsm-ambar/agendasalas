@@ -47,13 +47,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       // No primeiro login, "user" é o registro do banco (criado pelo adapter).
       if (user) {
         token.id = user.id as string;
         const email = (user.email ?? "").toLowerCase();
         const dbRole = (user as { role?: string }).role ?? "USER";
         token.role = adminEmails().includes(email) ? "IT_ADMIN" : dbRole;
+      }
+      // Guarda o access_token da Microsoft p/ chamar o Graph (busca de pessoas).
+      if (account?.provider === "microsoft-entra-id" && account.access_token) {
+        token.msAccessToken = account.access_token;
+        token.msTokenExpires = account.expires_at ? account.expires_at * 1000 : undefined;
       }
       return token;
     },

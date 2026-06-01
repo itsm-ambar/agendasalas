@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/authz";
 import { ADMIN_ROLES } from "@/lib/authz";
 import { createBooking, cancelBooking } from "@/lib/bookings";
+import { rememberContact } from "@/lib/people";
 import { combineDateTime } from "@/lib/format";
 
 type CreateInput = {
@@ -13,8 +14,10 @@ type CreateInput = {
   dateStr: string;
   startTime: string;
   endTime: string;
-  attendees: string[];
+  attendees: { email: string; name?: string }[];
 };
+
+const TENANT_DOMAINS = ["autodoc.com.br", "ambar"]; // pessoas internas não viram "contato externo"
 
 export async function createBookingAction(input: CreateInput) {
   const user = await requireUser();
@@ -32,10 +35,15 @@ export async function createBookingAction(input: CreateInput) {
     description: input.description,
     start,
     end,
-    attendees: input.attendees.map((email) => ({ email })),
+    attendees: input.attendees.map((a) => ({ email: a.email, name: a.name })),
   });
 
   if (res.ok) {
+    // Grava no catálogo os e-mails externos (de fora do tenant), p/ aparecerem em buscas futuras.
+    for (const a of input.attendees) {
+      const isInternal = TENANT_DOMAINS.some((d) => a.email.toLowerCase().includes(d));
+      if (!isInternal) await rememberContact(a.email, a.name);
+    }
     revalidatePath("/dashboard");
     revalidatePath("/admin");
     revalidatePath("/admin/approvals");
