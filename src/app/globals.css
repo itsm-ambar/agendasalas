@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: theme("colors.paper.DEFAULT");
+  background-image:
+    radial-gradient(circle at 8% -8%, rgba(251, 0, 71, 0.06), transparent 40%),
+    radial-gradient(circle at 100% 0%, rgba(8, 15, 38, 0.05), transparent 38%);
+  background-attachment: fixed;
+  color: theme("colors.ink.DEFAULT");
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl2 border border-paper-line bg-paper-card shadow-soft;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-dark shadow-brand;
+  }
+  .btn-ghost {
+    @apply btn border border-paper-line bg-paper-card text-ink-soft hover:border-brand/40 hover:text-ink;
+  }
+  .btn-dark {
+    @apply btn bg-ink text-white hover:bg-ink-soft;
+  }
+  .btn-danger {
+    @apply btn border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100;
+  }
+  .field {
+    @apply w-full rounded-xl border border-paper-line bg-paper-card px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-ink-mute focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-mute;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
