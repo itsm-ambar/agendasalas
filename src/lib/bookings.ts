@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { sendInvite } from "@/lib/email";
+import { sendInvite, sendOrganizerConfirmation } from "@/lib/email";
 import { BookingStatus } from "@prisma/client";
 
 export type AttendeeInput = { email: string; name?: string };
@@ -78,6 +78,9 @@ export async function createBooking(args: CreateBookingArgs) {
     await fireInvite(booking.id, "REQUEST");
   }
 
+  // E-mail de confirmação para o organizador (tanto pendente quanto confirmada).
+  await sendOrganizerConfirmationFor(booking.id, status === "PENDING");
+
   return { ok: true as const, booking, pending: status === "PENDING" };
 }
 
@@ -108,7 +111,10 @@ export async function decideBooking(
     },
   });
 
-  if (approve) await fireInvite(bookingId, "REQUEST");
+  if (approve) {
+    await fireInvite(bookingId, "REQUEST");
+    await sendOrganizerConfirmationFor(bookingId, false);
+  }
   return { ok: true as const };
 }
 
@@ -211,4 +217,24 @@ function dedupeAttendees(list: AttendeeInput[]): { email: string; name?: string 
     out.push({ email, name: a.name?.trim() || undefined });
   }
   return out;
+}
+
+async function sendOrganizerConfirmationFor(bookingId: string, pending: boolean) {
+  const b = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { room: true, organizer: true, attendees: true },
+  });
+  if (!b) return;
+  await sendOrganizerConfirmation({
+    title: b.title,
+    start: b.start,
+    end: b.end,
+    roomName: b.room.name,
+    roomLocation: b.room.location,
+    organizerEmail: b.organizer.email,
+    organizerName: b.organizer.name,
+    attendees: b.attendees.map((a) => ({ email: a.email, name: a.name })),
+    teamsJoinUrl: b.teamsJoinUrl,
+    pending,
+  });
 }

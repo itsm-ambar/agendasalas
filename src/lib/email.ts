@@ -110,3 +110,74 @@ export async function sendInvite(input: InviteInput) {
     return { error: true as const };
   }
 }
+
+type ConfirmationInput = {
+  title: string;
+  start: Date;
+  end: Date;
+  roomName: string;
+  roomLocation?: string | null;
+  organizerEmail: string;
+  organizerName?: string | null;
+  attendees: { email: string; name?: string | null }[];
+  teamsJoinUrl?: string | null;
+  pending: boolean; // true = sala exige aprovação (ainda não confirmada)
+};
+
+function confirmationHtml(input: ConfirmationInput): string {
+  const dia = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeZone: TZ }).format(input.start);
+  const hi = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short", timeZone: TZ }).format(input.start);
+  const hf = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short", timeZone: TZ }).format(input.end);
+  const titulo = input.pending ? "SOLICITACAO DE RESERVA ENVIADA" : "RESERVA CONFIRMADA";
+  const msg = input.pending
+    ? "Sua solicitacao foi registrada e esta aguardando aprovacao da diretoria. Voce sera avisado quando for aprovada."
+    : "Sua reserva foi criada com sucesso e ja esta no seu calendario.";
+  const nomes =
+    input.attendees.length > 0
+      ? input.attendees.map((a) => a.name || a.email).join(", ")
+      : "Apenas voce";
+  return `
+  <table style="width:100%;background:#F2F2F2;padding:28px 0;font-family:Segoe UI,system-ui,Arial,sans-serif">
+    <tr><td align="center">
+      <table style="max-width:560px;width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E4E4E8">
+        <tr><td style="background:${input.pending ? "#B45309" : "#FB0047"};padding:22px 26px">
+          <div style="font-size:12px;letter-spacing:.06em;color:#fff;opacity:.85">${titulo}</div>
+          <div style="font-size:21px;font-weight:700;color:#fff;margin-top:4px">${input.title}</div>
+        </td></tr>
+        <tr><td style="padding:24px 26px">
+          <p style="margin:0 0 16px;color:#2a3149">${msg}</p>
+          <table style="width:100%;font-size:14px;line-height:1.7;color:#080F26">
+            <tr><td style="color:#6B7184;width:96px">Sala</td><td><b>${input.roomName}</b>${input.roomLocation ? ` &middot; ${input.roomLocation}` : ""}</td></tr>
+            <tr><td style="color:#6B7184">Data</td><td>${dia}</td></tr>
+            <tr><td style="color:#6B7184">Horario</td><td>${hi} as ${hf}</td></tr>
+            <tr><td style="color:#6B7184">Participantes</td><td>${nomes}</td></tr>
+          </table>
+          ${input.teamsJoinUrl ? `<p style="margin-top:16px"><a href="${input.teamsJoinUrl}" style="background:#5b5fc7;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block;font-weight:600">Ingressar na reuniao do Teams</a></p>` : ""}
+        </td></tr>
+        <tr><td style="padding:16px 26px;background:#F2F2F2">
+          <span style="font-size:11px;color:#9AA0AD">Autodoc &middot; Reserva de Salas — mensagem automatica, nao responda este e-mail.</span>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
+}
+
+/** E-mail de confirmacao enviado SOMENTE ao organizador (quem reservou). */
+export async function sendOrganizerConfirmation(input: ConfirmationInput) {
+  if (!graphConfigured()) {
+    console.warn(`[email] Graph nao configurado — confirmacao NAO enviada para ${input.organizerEmail}`);
+    return { skipped: true as const };
+  }
+  const prefix = input.pending ? "Solicitacao enviada: " : "Reserva confirmada: ";
+  try {
+    await sendMailViaGraph({
+      to: [input.organizerEmail],
+      subject: `${prefix}${input.title} — ${input.roomName}`,
+      htmlBody: confirmationHtml(input),
+    });
+    return { sent: true as const };
+  } catch (e) {
+    console.error("[email] Falha ao enviar confirmacao:", e);
+    return { error: true as const };
+  }
+}
