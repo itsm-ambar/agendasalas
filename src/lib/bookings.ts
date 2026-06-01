@@ -138,6 +138,55 @@ async function fireInvite(bookingId: string, method: "REQUEST" | "CANCEL") {
     include: { room: true, organizer: true, attendees: true },
   });
   if (!b) return;
+
+  if (method === "CANCEL") {
+    // Se houver evento de calendário, remove; senão manda e-mail de cancelamento.
+    if (b.calendarEventId) {
+      const { deleteCalendarEvent } = await import("@/lib/graph-mail");
+      await deleteCalendarEvent(b.organizer.email, b.calendarEventId);
+    }
+    await sendInvite({
+      title: b.title,
+      description: b.description,
+      start: b.start,
+      end: b.end,
+      roomName: b.room.name,
+      roomLocation: b.room.location,
+      organizerName: b.organizer.name,
+      organizerEmail: b.organizer.email,
+      attendees: b.attendees.map((a) => ({ email: a.email, name: a.name })),
+      method: "CANCEL",
+    });
+    return;
+  }
+
+  // REQUEST: tenta criar o evento no calendário do organizador (com Teams).
+  const { createCalendarEvent } = await import("@/lib/graph-mail");
+  const locationLabel = `${b.room.name}${b.room.location ? ` (${b.room.location})` : ""}`;
+  const bodyHtml = `${b.description ? b.description + "<br><br>" : ""}Sala: <b>${b.room.name}</b><br>Reserva via Autodoc · Reserva de Salas.`;
+
+  const evt = await createCalendarEvent({
+    organizerEmail: b.organizer.email,
+    subject: `${b.title} — ${b.room.name}`,
+    bodyHtml,
+    startUTC: b.start,
+    endUTC: b.end,
+    location: locationLabel,
+    attendees: b.attendees.map((a) => ({ email: a.email, name: a.name })),
+    withTeams: true,
+  });
+
+  if (evt.ok) {
+    // Evento criado: a própria Microsoft envia os convites nativos (Aceitar/Recusar).
+    await prisma.booking.update({
+      where: { id: b.id },
+      data: { calendarEventId: evt.eventId ?? null, teamsJoinUrl: evt.joinUrl ?? null },
+    });
+    return;
+  }
+
+  // Fallback: se a criação do evento falhar, manda o e-mail com .ics (que já funciona).
+  console.warn("[booking] evento de calendário falhou, usando fallback de e-mail:", evt.detail);
   await sendInvite({
     title: b.title,
     description: b.description,
@@ -148,7 +197,7 @@ async function fireInvite(bookingId: string, method: "REQUEST" | "CANCEL") {
     organizerName: b.organizer.name,
     organizerEmail: b.organizer.email,
     attendees: b.attendees.map((a) => ({ email: a.email, name: a.name })),
-    method,
+    method: "REQUEST",
   });
 }
 

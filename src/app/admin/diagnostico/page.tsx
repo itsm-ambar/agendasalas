@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/authz";
 import { graphStatus } from "@/lib/graph-mail";
 import { TestEmailButton } from "@/components/TestEmailButton";
 import { TestPeopleSearch } from "@/components/TestPeopleSearch";
+import { TestCalendarButton } from "@/components/TestCalendarButton";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,17 @@ export default async function DiagnosticoPage() {
             funciona mas isto vier vazio, falta a permissão de aplicativo <b>User.Read.All</b> no Azure.
           </p>
           <TestPeopleSearch />
+        </div>
+      </section>
+
+      <section>
+        <p className="label">Teste de evento no calendário (Teams)</p>
+        <div className="card p-5">
+          <p className="mb-3 text-sm text-ink-soft">
+            Cria (e remove) um evento de teste na sua agenda com link do Teams. Valida as permissões de aplicativo
+            <b> Calendars.ReadWrite</b> e <b>OnlineMeetings.ReadWrite</b> (+ Application Access Policy).
+          </p>
+          <TestCalendarButton />
         </div>
       </section>
     </div>

@@ -62,6 +62,10 @@ model Booking {
 
   attendees Attendee[]
 
+  // Integração com Microsoft Graph (evento de calendário + Teams)
+  calendarEventId String?
+  teamsJoinUrl    String?
+
   @@index([roomId, start, end])
   @@index([status])
 }
