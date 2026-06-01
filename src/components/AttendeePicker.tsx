@@ -83,17 +83,28 @@ export function AttendeePicker({
     }
   }
 
+  function addCurrent() {
+    // prioriza a sugestão destacada; se não houver, tenta o e-mail digitado
+    if (open && results[active]) add(results[active]);
+    else tryAddRaw();
+  }
+
   return (
     <div className="relative" ref={boxRef}>
-      <input
-        className="field"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={onKey}
-        onFocus={() => results.length && setOpen(true)}
-        placeholder="Digite um nome ou e-mail…"
-        autoComplete="off"
-      />
+      <div className="flex gap-2">
+        <input
+          className="field"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={onKey}
+          onFocus={() => results.length && setOpen(true)}
+          placeholder="Digite um nome ou e-mail…"
+          autoComplete="off"
+        />
+        <button type="button" onClick={addCurrent} className="btn-ghost whitespace-nowrap">
+          Adicionar
+        </button>
+      </div>
 
       {open && (results.length > 0 || loading) && (
         <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-paper-line bg-paper-card shadow-lift">
