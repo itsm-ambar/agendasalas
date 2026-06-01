@@ -19,6 +19,16 @@ export function graphConfigured(): boolean {
   return !!(TENANT && CLIENT_ID && CLIENT_SECRET && MAIL_FROM);
 }
 
+/** Estado das variáveis para a página de diagnóstico (sem revelar segredos). */
+export function graphStatus() {
+  return {
+    tenant: !!TENANT,
+    clientId: !!CLIENT_ID,
+    clientSecret: !!CLIENT_SECRET,
+    mailFrom: MAIL_FROM ?? null,
+  };
+}
+
 async function getAppToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.token;
 
@@ -47,6 +57,30 @@ type SendArgs = {
   ics?: string; // conteúdo do arquivo .ics (opcional)
   icsMethod?: "REQUEST" | "CANCEL";
 };
+
+/** Diagnóstico: tenta obter token e enviar 1 e-mail; devolve detalhe do erro se falhar. */
+export async function graphSelfTest(to: string): Promise<{ ok: boolean; detail: string }> {
+  if (!graphConfigured()) {
+    const missing = [
+      !TENANT && "tenant (ISSUER)",
+      !CLIENT_ID && "AUTH_MICROSOFT_ENTRA_ID_ID",
+      !CLIENT_SECRET && "AUTH_MICROSOFT_ENTRA_ID_SECRET",
+      !MAIL_FROM && "MAIL_FROM",
+    ].filter(Boolean);
+    return { ok: false, detail: `Faltam variáveis: ${missing.join(", ")}` };
+  }
+  try {
+    await sendMailViaGraph({
+      to: [to],
+      subject: "[TESTE] Autodoc Reserva de Salas",
+      htmlBody:
+        "<p>Este é um e-mail de teste do sistema de reservas. Se você recebeu, o envio via Microsoft Graph está funcionando. ✅</p>",
+    });
+    return { ok: true, detail: `E-mail de teste enviado para ${to} (caixa ${MAIL_FROM}).` };
+  } catch (e) {
+    return { ok: false, detail: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 /** Envia e-mail pela caixa compartilhada via Microsoft Graph (sendMail). */
 export async function sendMailViaGraph({ to, subject, htmlBody, ics, icsMethod }: SendArgs) {
