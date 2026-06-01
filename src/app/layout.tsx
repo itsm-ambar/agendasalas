@@ -18,6 +18,13 @@ const body = Inter({
 export const metadata: Metadata = {
   title: "Autodoc · Reserva de Salas",
   description: "Reserve salas de reunião da Autodoc em poucos cliques.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

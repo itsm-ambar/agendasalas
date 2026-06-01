@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type Props = {
   variant?: "color" | "white" | "ink";
   showWordmark?: boolean;
@@ -5,42 +7,43 @@ type Props = {
   size?: number;
 };
 
-/** Símbolo da Autodoc (anel/pie aberto + bloco) usando currentColor. */
-export function AutodocMark({ size = 28, className }: { size?: number; className?: string }) {
+/** Símbolo oficial da Autodoc (imagem PNG com transparência). */
+export function AutodocMark({
+  size = 28,
+  variant = "color",
+  className,
+}: {
+  size?: number;
+  variant?: "color" | "white";
+  className?: string;
+}) {
+  const src = variant === "white" ? "/autodoc-symbol-white.png" : "/autodoc-symbol.png";
   return (
-    <svg
+    <Image
+      src={src}
+      alt="Autodoc"
       width={size}
       height={size}
-      viewBox="0 0 48 48"
-      fill="none"
       className={className}
-      aria-hidden
-    >
-      <circle
-        cx="24"
-        cy="24"
-        r="16"
-        stroke="currentColor"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeDasharray="74 200"
-        transform="rotate(-46 24 24)"
-      />
-      <rect x="30.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor" />
-    </svg>
+      style={{ width: size, height: size, objectFit: "contain" }}
+      priority
+    />
   );
 }
 
+/** Logo Autodoc: símbolo oficial + wordmark tipográfico. */
 export function AutodocLogo({ variant = "color", showWordmark = true, className, size = 28 }: Props) {
-  const markColor =
-    variant === "white" ? "text-white" : variant === "ink" ? "text-ink" : "text-brand";
+  const markVariant = variant === "white" ? "white" : "color";
   const wordColor = variant === "white" ? "text-white" : "text-ink";
 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className ?? ""}`}>
-      <AutodocMark size={size} className={markColor} />
+      <AutodocMark size={size} variant={markVariant} />
       {showWordmark && (
-        <span className={`font-display font-extrabold leading-none tracking-tight ${wordColor}`} style={{ fontSize: size * 0.78 }}>
+        <span
+          className={`font-display font-extrabold leading-none tracking-tight ${wordColor}`}
+          style={{ fontSize: size * 0.78 }}
+        >
           AUTODOC
           <sup className="ml-0.5 align-super text-[0.5em] font-semibold">®</sup>
         </span>
