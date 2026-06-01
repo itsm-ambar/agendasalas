@@ -37,7 +37,6 @@ export async function createBookingAction(input: CreateInput) {
 
   if (res.ok) {
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/bookings");
     revalidatePath("/admin");
     revalidatePath("/admin/approvals");
   }
@@ -49,7 +48,6 @@ export async function cancelBookingAction(bookingId: string) {
   const isAdmin = ADMIN_ROLES.includes(user.role);
   const res = await cancelBooking(bookingId, user.id, isAdmin);
   if (res.ok) {
-    revalidatePath("/dashboard/bookings");
     revalidatePath("/dashboard");
     revalidatePath("/admin");
   }

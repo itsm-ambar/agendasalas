@@ -18,15 +18,6 @@ export async function TopNav() {
         </Link>
 
         <nav className="hidden items-center gap-1 text-sm sm:flex">
-          <Link href="/dashboard" className="rounded-full px-3 py-1.5 text-ink-soft hover:bg-paper-card hover:text-ink">
-            Salas
-          </Link>
-          <Link
-            href="/dashboard/bookings"
-            className="rounded-full px-3 py-1.5 text-ink-soft hover:bg-paper-card hover:text-ink"
-          >
-            Minhas reservas
-          </Link>
           {isAdmin && (
             <Link
               href="/admin"
@@ -38,6 +29,14 @@ export async function TopNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="rounded-full px-3 py-1.5 text-sm font-medium text-brand-dark hover:bg-brand-soft sm:hidden"
+            >
+              Admin
+            </Link>
+          )}
           {user && (
             <div className="hidden text-right sm:block">
               <div className="text-sm font-medium leading-tight">{user.name ?? user.email}</div>

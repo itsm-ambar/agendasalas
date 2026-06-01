@@ -16,9 +16,14 @@ export function fmtDateTime(d: Date | string) {
   return `${fmtDate(d)} · ${fmtTime(d)}`;
 }
 
-/** "2025-06-02" + "14:30" (horário local do navegador) -> Date */
+/** "2025-06-02" + "14:30" interpretado no fuso de São Paulo (UTC-3, sem horário de verão) -> Date */
 export function combineDateTime(dateStr: string, timeStr: string): Date {
-  return new Date(`${dateStr}T${timeStr}`);
+  return new Date(`${dateStr}T${timeStr}:00-03:00`);
+}
+
+/** Chave de data (yyyy-mm-dd) no fuso de São Paulo, para comparar dias. */
+export function spDateKey(d: Date | string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(d));
 }
 
 export function todayISO(): string {
