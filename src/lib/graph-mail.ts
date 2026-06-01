@@ -29,7 +29,7 @@ export function graphStatus() {
   };
 }
 
-async function getAppToken(): Promise<string> {
+export async function getAppToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.token;
 
   const url = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`;

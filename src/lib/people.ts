@@ -1,20 +1,26 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { getAppToken, graphConfigured } from "@/lib/graph-mail";
 
 export type Person = { email: string; name: string; source: "tenant" | "contact" };
 
-/** Busca pessoas no diretório do tenant via Microsoft Graph. */
-async function searchGraph(q: string, accessToken: string): Promise<Person[]> {
-  // Filtra por nome/sobrenome/e-mail começando com o termo.
+/**
+ * Busca pessoas no diretório do tenant via Microsoft Graph usando a credencial
+ * de APLICATIVO (a mesma do envio de e-mail). Requer a permissão de aplicativo
+ * User.Read.All concedida no Azure.
+ */
+async function searchGraph(q: string): Promise<Person[]> {
+  if (!graphConfigured()) return [];
   const term = q.replace(/'/g, "''");
   const filter = encodeURIComponent(
     `startswith(displayName,'${term}') or startswith(mail,'${term}') or startswith(userPrincipalName,'${term}')`,
   );
-  const url = `https://graph.microsoft.com/v1.0/users?$filter=${filter}&$select=displayName,mail,userPrincipalName&$top=10`;
+  const url = `https://graph.microsoft.com/v1.0/users?$filter=${filter}&$select=displayName,mail,userPrincipalName&$top=15&$count=true`;
 
   try {
+    const token = await getAppToken();
     const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}`, ConsistencyLevel: "eventual" },
+      headers: { Authorization: `Bearer ${token}`, ConsistencyLevel: "eventual" },
     });
     if (!res.ok) {
       console.warn("[people] Graph respondeu", res.status, await res.text().catch(() => ""));
@@ -47,14 +53,11 @@ async function searchContacts(q: string): Promise<Person[]> {
   return rows.map((c) => ({ email: c.email, name: c.name || c.email, source: "contact" as const }));
 }
 
-export async function searchPeople(q: string, accessToken?: string): Promise<Person[]> {
+export async function searchPeople(q: string): Promise<Person[]> {
   const query = q.trim();
   if (query.length < 2) return [];
 
-  const [tenant, contacts] = await Promise.all([
-    accessToken ? searchGraph(query, accessToken) : Promise.resolve([]),
-    searchContacts(query),
-  ]);
+  const [tenant, contacts] = await Promise.all([searchGraph(query), searchContacts(query)]);
 
   // tenant tem prioridade; dedup por e-mail.
   const seen = new Set<string>();

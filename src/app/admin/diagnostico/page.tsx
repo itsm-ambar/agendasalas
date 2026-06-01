@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/authz";
 import { graphStatus } from "@/lib/graph-mail";
 import { TestEmailButton } from "@/components/TestEmailButton";
+import { TestPeopleSearch } from "@/components/TestPeopleSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,17 @@ export default async function DiagnosticoPage() {
             (ex.: <span className="font-mono text-xs">Forbidden</span> = falta a permissão Mail.Send).
           </p>
           <TestEmailButton />
+        </div>
+      </section>
+
+      <section>
+        <p className="label">Teste de busca de pessoas (autocomplete)</p>
+        <div className="card p-5">
+          <p className="mb-3 text-sm text-ink-soft">
+            Busca no diretório do tenant (Autodoc/Ambar) via Graph com a credencial de aplicativo. Se o e-mail
+            funciona mas isto vier vazio, falta a permissão de aplicativo <b>User.Read.All</b> no Azure.
+          </p>
+          <TestPeopleSearch />
         </div>
       </section>
     </div>

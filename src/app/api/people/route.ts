@@ -9,7 +9,6 @@ export async function GET(req: Request) {
   if (!session?.user) return NextResponse.json({ people: [] }, { status: 401 });
 
   const q = new URL(req.url).searchParams.get("q") ?? "";
-  const token = (session as { msAccessToken?: string }).msAccessToken;
-  const people = await searchPeople(q, token);
+  const people = await searchPeople(q);
   return NextResponse.json({ people });
 }
