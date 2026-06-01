@@ -11,21 +11,39 @@ export type Person = { email: string; name: string; source: "tenant" | "contact"
  */
 async function searchGraph(q: string): Promise<Person[]> {
   if (!graphConfigured()) return [];
-  const term = q.replace(/'/g, "''");
-  const filter = encodeURIComponent(
-    `startswith(displayName,'${term}') or startswith(mail,'${term}') or startswith(userPrincipalName,'${term}')`,
-  );
-  const url = `https://graph.microsoft.com/v1.0/users?$filter=${filter}&$select=displayName,mail,userPrincipalName&$top=15&$count=true`;
+  const term = q.replace(/"/g, "").replace(/'/g, "''");
 
   try {
     const token = await getAppToken();
-    const res = await fetch(url, {
+    const select = "displayName,mail,userPrincipalName";
+
+    // 1ª tentativa: $search (melhor pra busca por texto; exige ConsistencyLevel: eventual)
+    const searchUrl =
+      `https://graph.microsoft.com/v1.0/users?$search=` +
+      encodeURIComponent(`"displayName:${term}" OR "mail:${term}"`) +
+      `&$select=${select}&$top=15&$count=true`;
+
+    let res = await fetch(searchUrl, {
       headers: { Authorization: `Bearer ${token}`, ConsistencyLevel: "eventual" },
     });
+
+    // 2ª tentativa (fallback): $filter com startswith
     if (!res.ok) {
-      console.warn("[people] Graph respondeu", res.status, await res.text().catch(() => ""));
-      return [];
+      const errTxt = await res.text().catch(() => "");
+      console.warn("[people] $search falhou", res.status, errTxt);
+      const filter = encodeURIComponent(
+        `startswith(displayName,'${term}') or startswith(mail,'${term}') or startswith(userPrincipalName,'${term}')`,
+      );
+      const filterUrl = `https://graph.microsoft.com/v1.0/users?$filter=${filter}&$select=${select}&$top=15&$count=true`;
+      res = await fetch(filterUrl, {
+        headers: { Authorization: `Bearer ${token}`, ConsistencyLevel: "eventual" },
+      });
+      if (!res.ok) {
+        console.warn("[people] $filter falhou", res.status, await res.text().catch(() => ""));
+        return [];
+      }
     }
+
     const data = (await res.json()) as {
       value: { displayName?: string; mail?: string; userPrincipalName?: string }[];
     };
@@ -70,7 +88,36 @@ export async function searchPeople(q: string): Promise<Person[]> {
   return out.slice(0, 12);
 }
 
-/** Grava um e-mail externo no catálogo para aparecer em buscas futuras. */
+/** Versão diagnóstica: retorna também o status/erro do Graph para a página de diagnóstico. */
+export async function searchPeopleDiagnostic(
+  q: string,
+): Promise<{ count: number; sample: { name: string; email: string }[]; graph: string }> {
+  const query = q.trim();
+  if (query.length < 2) return { count: 0, sample: [], graph: "termo muito curto" };
+
+  let graph = "ok";
+  if (!graphConfigured()) {
+    graph = "Graph não configurado (faltam variáveis)";
+  } else {
+    try {
+      const token = await getAppToken();
+      const term = query.replace(/"/g, "").replace(/'/g, "''");
+      const url =
+        `https://graph.microsoft.com/v1.0/users?$search=` +
+        encodeURIComponent(`"displayName:${term}" OR "mail:${term}"`) +
+        `&$select=displayName,mail&$top=5&$count=true`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}`, ConsistencyLevel: "eventual" },
+      });
+      graph = res.ok ? `OK (${res.status})` : `${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`;
+    } catch (e) {
+      graph = `exceção: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
+  const people = await searchPeople(query);
+  return { count: people.length, sample: people.slice(0, 5).map((p) => ({ name: p.name, email: p.email })), graph };
+}
 export async function rememberContact(email: string, name?: string) {
   const e = email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return;

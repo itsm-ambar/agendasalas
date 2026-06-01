@@ -2,7 +2,7 @@
 
 import { requireAdmin } from "@/lib/authz";
 import { graphSelfTest } from "@/lib/graph-mail";
-import { searchPeople } from "@/lib/people";
+import { searchPeopleDiagnostic } from "@/lib/people";
 
 export async function sendTestEmailAction() {
   const admin = await requireAdmin();
@@ -12,6 +12,6 @@ export async function sendTestEmailAction() {
 
 export async function testPeopleSearchAction(q: string) {
   await requireAdmin();
-  const people = await searchPeople(q);
-  return { count: people.length, sample: people.slice(0, 5) };
+  const result = await searchPeopleDiagnostic(q);
+  return result;
 }

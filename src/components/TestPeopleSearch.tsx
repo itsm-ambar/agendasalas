@@ -6,7 +6,7 @@ import { testPeopleSearchAction } from "@/app/admin/diagnostico/actions";
 export function TestPeopleSearch() {
   const [q, setQ] = useState("");
   const [pending, start] = useTransition();
-  const [res, setRes] = useState<{ count: number; sample: { name: string; email: string }[] } | null>(null);
+  const [res, setRes] = useState<{ count: number; sample: { name: string; email: string }[]; graph: string } | null>(null);
 
   return (
     <div>
@@ -28,6 +28,7 @@ export function TestPeopleSearch() {
       {res && (
         <div className="mt-3 rounded-xl border border-paper-line bg-paper px-3.5 py-2.5 text-sm">
           <p className="font-semibold">{res.count} resultado(s)</p>
+          <p className="mt-0.5 break-words font-mono text-xs text-ink-mute">Graph: {res.graph}</p>
           {res.sample.length > 0 ? (
             <ul className="mt-1 space-y-0.5">
               {res.sample.map((p) => (
@@ -38,8 +39,8 @@ export function TestPeopleSearch() {
             </ul>
           ) : (
             <p className="mt-1 text-ink-mute">
-              Nenhuma pessoa encontrada. Se o e-mail funciona mas isto está vazio, falta a permissão de
-              aplicativo <b>User.Read.All</b> (com consentimento) no Azure.
+              Nenhuma pessoa encontrada. Veja a linha &quot;Graph&quot; acima para o motivo (ex.: 403 = falta
+              permissão/consentimento).
             </p>
           )}
         </div>
