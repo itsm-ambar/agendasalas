@@ -7,6 +7,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const approver = isApprover(admin.role);
 
   const tabs = [
+    { href: "/admin/agenda", label: "Agenda" },
     { href: "/admin", label: "Visão geral" },
     ...(approver ? [{ href: "/admin/approvals", label: "Aprovações" }] : []),
     { href: "/admin/rooms", label: "Salas" },
